@@ -6,16 +6,13 @@ import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
 
 class ApiServisi {
-  // Hataları yazdırmak için logger
+  // Hataları güzel yazdırmak için logger
   static var logger = Logger(printer: PrettyPrinter(methodCount: 0));
 
-  // Platforma göre URL belirleme
+  // --- CANLI SUNUCU ADRESİ ---
+  // Artık localhost yok, Render'daki adresimiz var.
   static String get baseUrl {
-    if (kIsWeb) {
-      return "http://127.0.0.1:5000";
-    } else {
-      return "http://10.0.2.2:5000";
-    }
+    return "https://tahlil-backend.onrender.com";
   }
 
   static String? aktifKullanici;
@@ -37,7 +34,7 @@ class ApiServisi {
     return ["Diyabet", "Tansiyon", "Kolesterol"]; 
   }
 
-  // --- KAYIT OL (YENİ PARAMETRELERLE) ---
+  // --- KAYIT OL ---
   static Future<Map<String, dynamic>> kayitOl({
     required String username, 
     required String password,
@@ -98,7 +95,7 @@ class ApiServisi {
     }
   }
 
-  // --- YENİ EKLENEN: KULLANICI DETAYLARINI GETİR ---
+  // --- KULLANICI DETAYLARINI GETİR ---
   static Future<Map<String, dynamic>?> kullaniciBilgileriniGetir() async {
     if (aktifKullanici == null) return null;
     try {
@@ -113,7 +110,6 @@ class ApiServisi {
     }
     return null;
   }
-  // -------------------------------------------------
 
   // --- PDF YÜKLE ---
   static Future<String> pdfYukle(PlatformFile file) async {
@@ -124,8 +120,10 @@ class ApiServisi {
       request.fields['username'] = aktifKullanici!;
 
       if (kIsWeb) {
+        // Web için bytes kullanılır
         request.files.add(http.MultipartFile.fromBytes('file', file.bytes!, filename: file.name));
       } else {
+        // Mobil için path kullanılır
         if (file.path != null) request.files.add(await http.MultipartFile.fromPath('file', file.path!));
       }
 
@@ -178,8 +176,7 @@ class ApiServisi {
   static Future<List<TahlilDetayi>> parametreGecmisiniGetir(String parametreAdi) async {
     if (aktifKullanici == null) return [];
     try {
-      // ÖNEMLİ: Parametre adını URL uyumlu hale getiriyoruz (Encode)
-      // Bu sayede '#' , '+' , boşluk gibi karakterler URL'i bozmaz.
+      // URL uyumlu hale getirme (boşluklar vs için)
       String guvenliParametreAdi = Uri.encodeComponent(parametreAdi);
       
       var url = Uri.parse("$baseUrl/results/$guvenliParametreAdi?username=$aktifKullanici");
