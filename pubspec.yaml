@@ -1,0 +1,62 @@
+name: tahlil_uygulamasi
+description: "A new Flutter project."
+publish_to: 'none' 
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.0.0 
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # İkonlar ve UI
+  cupertino_icons: ^1.0.8
+  
+  # Ağ ve Dosya İşlemleri
+  http: ^1.5.0
+  file_picker: ^10.3.3
+  
+  # Veri ve Loglama
+  fl_chart: ^1.1.1
+  intl: ^0.20.2
+  logger: ^2.6.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  
+  # Lint kuralları
+  flutter_lints: ^5.0.0
+  
+  # İkon oluşturucu paketi
+  flutter_launcher_icons: ^0.13.1
+
+# Flutter Ayarları
+flutter:
+  uses-material-design: true
+  
+  # --- DÜZELTME BURADA YAPILDI ---
+  # 'assets/' diyerek klasörü tamamen açtık.
+  # Artık main_illustration.png ve running_blood_drop.png çalışacak.
+  assets:
+    - assets/
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  min_sdk_android: 21
+  
+  # Eski cihazlar için genel ikon
+  image_path: "assets/app_logo.png"
+
+  # ADAPTIVE ICONS
+  adaptive_icon_background: "#ffffff"
+  adaptive_icon_foreground: "assets/app_logo.png"
+  
+  web:
+    generate: true
+    image_path: "assets/app_logo.png"
+    background_color: "#ffffff"
+    theme_color: "#ffffff"
