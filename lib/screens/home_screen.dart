@@ -4,7 +4,6 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 import 'login_screen.dart';
-import 'chat_screen.dart'; // YENİ: Chat ekranı bağlantısı eklendi
 
 // --- YARDIMCI FONKSİYON ---
 String referansBol(String text) {
@@ -21,6 +20,7 @@ class AnaSayfa extends StatefulWidget {
 }
 
 class _AnaSayfaState extends State<AnaSayfa> {
+  // SADECE ARKA PLAN RENGİ DEĞİŞKENİ (Diğer renkler orijinal kodundaki gibi kaldı)
   static const coolBg = Color(0xFFF5F7FA); 
 
   Future<Map<String, dynamic>> _matrisFuture = ApiServisi.karsilastirmaMatrisiniGetir();
@@ -107,6 +107,7 @@ class _AnaSayfaState extends State<AnaSayfa> {
     double ekranGenisligi = MediaQuery.of(context).size.width;
     bool isWeb = ekranGenisligi > 800;
 
+    // Kullanıcı verilerini hazırla
     String username = _kullaniciBilgileri?['username'] ?? "Kullanıcı";
     String cinsiyet = _kullaniciBilgileri?['cinsiyet'] ?? "-";
     int? dogumYili = _kullaniciBilgileri?['dogum_yili'];
@@ -118,16 +119,20 @@ class _AnaSayfaState extends State<AnaSayfa> {
         : [];
 
     return Scaffold(
+      // DEĞİŞİKLİK BURADA: Sadece arka plan rengi coolBg yapıldı.
       backgroundColor: coolBg,
       
+      // --- APP BAR ---
       appBar: AppBar(
         toolbarHeight: isWeb ? 100 : 130, 
+        // AppBar arka planı da sayfayla uyumlu olsun diye coolBg yapıldı
         backgroundColor: coolBg,
         elevation: 0,
         scrolledUnderElevation: 0,
         
         title: Row(
           children: [
+            // 1. Avatar (ORİJİNAL RENK: Mavi)
             Container(
               width: 50,
               height: 50,
@@ -143,6 +148,8 @@ class _AnaSayfaState extends State<AnaSayfa> {
               ),
             ),
             const SizedBox(width: 15),
+            
+            // 2. İsim, Detaylar ve Hastalıklar
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -157,6 +164,8 @@ class _AnaSayfaState extends State<AnaSayfa> {
                     "$cinsiyet, $yas Yaşında", 
                     style: TextStyle(fontSize: 14, color: Colors.grey[600])
                   ),
+                  
+                  // Hastalıklar
                   if (hastaliklar.isNotEmpty) ...[
                     const SizedBox(height: 6),
                     SingleChildScrollView(
@@ -186,18 +195,8 @@ class _AnaSayfaState extends State<AnaSayfa> {
           ],
         ),
         
+        // Çıkış Butonu
         actions: [
-          // ########################################################
-          // --- YENİ EKLENEN: YAPAY ZEKA SOHBET BUTONU ---
-          // ########################################################
-          IconButton(
-            icon: const Icon(Icons.psychology_alt_rounded, color: Color(0xFFEE6C4D), size: 30),
-            tooltip: "AI Tahlil Danışmanı",
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const ChatEkrani()),
-            ),
-          ),
           Padding(
             padding: const EdgeInsets.only(right: 12.0),
             child: IconButton(
@@ -210,9 +209,13 @@ class _AnaSayfaState extends State<AnaSayfa> {
             ),
           )
         ],
+        // Altına ince bir çizgi
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1.0),
-          child: Container(color: Colors.grey[300], height: 1.0),
+          child: Container(
+            color: Colors.grey[300], // Çizgi rengini biraz belirginleştirdim
+            height: 1.0,
+          ),
         ),
       ),
 
@@ -221,20 +224,27 @@ class _AnaSayfaState extends State<AnaSayfa> {
         children: [
           if (_yukleniyor) const LinearProgressIndicator(),
 
+          // --- "TAHLİLLERİM" BAŞLIĞI ---
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 20, 24, 10),
             child: Row(
               children: [
+              
                 Icon(Icons.analytics_outlined, color: Color(0xFF448AFF)),
                 const SizedBox(width: 8),
                 const Text(
                   "Tahlillerim",
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87),
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87
+                  ),
                 ),
               ],
             ),
           ),
           
+          // --- TABLO ---
           Expanded(
             child: FutureBuilder<Map<String, dynamic>>(
               future: _matrisFuture,
@@ -363,6 +373,7 @@ class _AnaSayfaState extends State<AnaSayfa> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _pdfYukle,
+        // BUTON RENGİ ORİJİNAL: Mavi
         backgroundColor: Colors.blueAccent,
         foregroundColor: Colors.white,
         child: const Icon(Icons.add),
@@ -375,12 +386,15 @@ class _AnaSayfaState extends State<AnaSayfa> {
 class DetaySayfasi extends StatefulWidget {
   final String parametreAdi;
   const DetaySayfasi({super.key, required this.parametreAdi});
+
   @override
   State<DetaySayfasi> createState() => _DetaySayfasiState();
 }
 
 class _DetaySayfasiState extends State<DetaySayfasi> {
+  // Burada da arka plan değişkenini tanımlıyoruz
   static const coolBg = Color(0xFFF5F7FA);
+
   late Future<List<TahlilDetayi>> _gecmisFuture;
 
   @override
@@ -416,10 +430,10 @@ class _DetaySayfasiState extends State<DetaySayfasi> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: coolBg, 
+      backgroundColor: coolBg, // Arka plan değiştirildi
       appBar: AppBar(
         title: Text(widget.parametreAdi),
-        backgroundColor: coolBg, 
+        backgroundColor: coolBg, // AppBar arka planı değiştirildi
       ),
       body: Center(
         child: ConstrainedBox(
@@ -455,8 +469,10 @@ class _DetaySayfasiState extends State<DetaySayfasi> {
               return ListView(
                 padding: const EdgeInsets.all(16.0),
                 children: [
+                  // GRAFİK KARTI
                   Container(
                     padding: const EdgeInsets.all(16),
+                    // Kart rengi beyaz kalsın ki coolBg üstünde belli olsun
                     decoration: BoxDecoration(
                       color: Colors.white, 
                       borderRadius: BorderRadius.circular(16),
@@ -475,6 +491,7 @@ class _DetaySayfasiState extends State<DetaySayfasi> {
                             ],
                           ),
                         const SizedBox(height: 10),
+                        
                         Container(
                           height: 300,
                           padding: const EdgeInsets.only(right: 20, top: 10),
@@ -519,6 +536,7 @@ class _DetaySayfasiState extends State<DetaySayfasi> {
                               lineBarsData: [
                                 LineChartBarData(
                                   spots: veriler.asMap().entries.map((e) => FlSpot(e.key.toDouble(), e.value.deger)).toList(),
+                                  // GRAFİK RENGİ ORİJİNAL: Mavi
                                   isCurved: true, color: Colors.blueAccent, barWidth: 4, isStrokeCapRound: true, belowBarData: BarAreaData(show: false),
                                   dotData: FlDotData(show: true, getDotPainter: (spot, percent, barData, index) {
                                       final veri = veriler[index];
@@ -533,10 +551,13 @@ class _DetaySayfasiState extends State<DetaySayfasi> {
                       ],
                     ),
                   ),
+
                   const SizedBox(height: 30),
+                  
+                  // TABLO KARTI
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.white, 
+                      color: Colors.white, // Kart içi beyaz
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)]
                     ),

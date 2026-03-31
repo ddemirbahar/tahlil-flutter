@@ -6,11 +6,16 @@ import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
 
 class ApiServisi {
+  // Hataları yazdırmak için logger
   static var logger = Logger(printer: PrettyPrinter(methodCount: 0));
 
-  // --- CANLI SUNUCU ADRESİ ---
+  // Platforma göre URL belirleme
   static String get baseUrl {
-    return "https://tahlil-backend.onrender.com";
+    if (kIsWeb) {
+      return "http://127.0.0.1:5000";
+    } else {
+      return "http://10.0.2.2:5000";
+    }
   }
 
   static String? aktifKullanici;
@@ -20,6 +25,7 @@ class ApiServisi {
     try {
       var url = Uri.parse("$baseUrl/diseases");
       var response = await http.get(url);
+
       if (response.statusCode == 200) {
         List<dynamic> data = jsonDecode(response.body);
         return data.cast<String>();
@@ -27,10 +33,11 @@ class ApiServisi {
     } catch (e) {
       logger.e("Hastalık listesi çekilemedi: $e");
     }
+    // Hata olursa varsayılan bir liste döndür
     return ["Diyabet", "Tansiyon", "Kolesterol"]; 
   }
 
-  // --- KAYIT OL ---
+  // --- KAYIT OL (YENİ PARAMETRELERLE) ---
   static Future<Map<String, dynamic>> kayitOl({
     required String username, 
     required String password,
@@ -55,12 +62,14 @@ class ApiServisi {
       );
 
       if (response.statusCode == 201) {
+        logger.i("Kayıt Başarılı: $username");
         return {'basarili': true, 'mesaj': 'Kayıt Başarılı'};
       } else {
         var body = jsonDecode(response.body);
         return {'basarili': false, 'mesaj': body['hata'] ?? 'Kayıt başarısız'};
       }
     } catch (e) {
+      logger.e("Sunucu Bağlantı Hatası (Kayıt): $e");
       return {'basarili': false, 'mesaj': 'Hata: $e'};
     }
   }
@@ -78,14 +87,33 @@ class ApiServisi {
       if (response.statusCode == 200) {
         var data = jsonDecode(response.body);
         aktifKullanici = data['username'];
+        logger.i("Giriş Başarılı: $username");
         return {'basarili': true, 'mesaj': 'Giriş Başarılı'};
       } else {
-        return {'basarili': false, 'mesaj': 'Hatalı giriş'};
+        return {'basarili': false, 'mesaj': 'Hatalı kullanıcı adı veya şifre'};
       }
     } catch (e) {
+      logger.e("Sunucu Bağlantı Hatası (Giriş): $e");
       return {'basarili': false, 'mesaj': 'Sunucu hatası: $e'};
     }
   }
+
+  // --- YENİ EKLENEN: KULLANICI DETAYLARINI GETİR ---
+  static Future<Map<String, dynamic>?> kullaniciBilgileriniGetir() async {
+    if (aktifKullanici == null) return null;
+    try {
+      var url = Uri.parse("$baseUrl/user_info?username=$aktifKullanici");
+      var response = await http.get(url);
+      
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+    } catch (e) {
+      logger.e("Kullanıcı bilgisi hatası: $e");
+    }
+    return null;
+  }
+  // -------------------------------------------------
 
   // --- PDF YÜKLE ---
   static Future<String> pdfYukle(PlatformFile file) async {
@@ -102,8 +130,31 @@ class ApiServisi {
       }
 
       var response = await request.send();
-      return response.statusCode == 201 ? "Başarılı" : "Hata: ${response.statusCode}";
+      if (response.statusCode == 201) {
+        return "Başarılı";
+      } else {
+        return "Hata: ${response.statusCode}";
+      }
     } catch (e) { 
+      logger.e("PDF Yükleme Hatası: $e");
+      return "Hata: $e"; 
+    }
+  }
+
+  // --- VERİ SİLME ---
+  static Future<String> pdfVeVeriSil(String tarih) async {
+    if (aktifKullanici == null) return "Giriş yapılmamış";
+    try {
+      var url = Uri.parse("$baseUrl/delete_date?username=$aktifKullanici&date=$tarih");
+      var response = await http.delete(url);
+      
+      if (response.statusCode == 200) {
+        return "Silindi";
+      } else {
+        return "Hata: ${response.statusCode}";
+      }
+    } catch (e) { 
+      logger.e("Silme Hatası: $e");
       return "Hata: $e"; 
     }
   }
@@ -114,8 +165,12 @@ class ApiServisi {
     try {
       var url = Uri.parse("$baseUrl/comparison_matrix?username=$aktifKullanici");
       var response = await http.get(url);
-      if (response.statusCode == 200) return jsonDecode(response.body);
-    } catch (e) { logger.e("Matris hatası: $e"); }
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+    } catch (e) {
+      logger.e("Matris verisi çekilemedi: $e");
+    }
     return {};
   }
 
@@ -123,64 +178,21 @@ class ApiServisi {
   static Future<List<TahlilDetayi>> parametreGecmisiniGetir(String parametreAdi) async {
     if (aktifKullanici == null) return [];
     try {
+      // ÖNEMLİ: Parametre adını URL uyumlu hale getiriyoruz (Encode)
+      // Bu sayede '#' , '+' , boşluk gibi karakterler URL'i bozmaz.
       String guvenliParametreAdi = Uri.encodeComponent(parametreAdi);
+      
       var url = Uri.parse("$baseUrl/results/$guvenliParametreAdi?username=$aktifKullanici");
       var response = await http.get(url);
+      
       if (response.statusCode == 200) {
         List data = jsonDecode(response.body);
         return data.map((e) => TahlilDetayi.fromJson(e)).toList();
       }
-    } catch (e) { logger.e("Geçmiş hatası: $e"); }
-    return [];
-  }
-
-  // --- KULLANICI DETAYLARINI GETİR ---
-  static Future<Map<String, dynamic>?> kullaniciBilgileriniGetir() async {
-    if (aktifKullanici == null) return null;
-    try {
-      var url = Uri.parse("$baseUrl/user_info?username=$aktifKullanici");
-      var response = await http.get(url);
-      if (response.statusCode == 200) return jsonDecode(response.body);
-    } catch (e) { logger.e("Profil bilgisi hatası: $e"); }
-    return null;
-  }
-
-  // --- VERİ SİLME ---
-  static Future<String> pdfVeVeriSil(String tarih) async {
-    if (aktifKullanici == null) return "Giriş yapılmamış";
-    try {
-      var url = Uri.parse("$baseUrl/delete_date?username=$aktifKullanici&date=$tarih");
-      var response = await http.delete(url);
-      return response.statusCode == 200 ? "Silindi" : "Hata";
-    } catch (e) { return "Hata: $e"; }
-  }
-
-  // ########################################################
-  // --- YENİ EKLENEN KISIM: YAPAY ZEKA SOHBET (RAG) ---
-  // ########################################################
-  static Future<String> sohbetEt(String soru) async {
-    if (aktifKullanici == null) return "Lütfen önce giriş yapın.";
-    try {
-      var url = Uri.parse("$baseUrl/chat");
-      var response = await http.post(
-        url,
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "username": aktifKullanici,
-          "soru": soru
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        var data = jsonDecode(response.body);
-        return data['yanit']; // api.py'den gelen Qwen cevabı
-      } else {
-        return "Üzgünüm, şu an tahlillerini analiz edemiyorum. (Hata: ${response.statusCode})";
-      }
     } catch (e) {
-      logger.e("Chat bağlantı hatası: $e");
-      return "Sunucuya bağlanılamadı. Lütfen internetinizi kontrol edin.";
+      logger.e("Geçmiş verisi çekilemedi ($parametreAdi): $e");
     }
+    return [];
   }
 }
 
