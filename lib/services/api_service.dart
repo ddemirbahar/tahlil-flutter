@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/foundation.dart' show kIsWeb; 
+import 'package:flutter/foundation.dart'; // kReleaseMode ve kIsWeb için gerekli
 import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
 
@@ -9,12 +9,18 @@ class ApiServisi {
   // Hataları yazdırmak için logger
   static var logger = Logger(printer: PrettyPrinter(methodCount: 0));
 
-  // Platforma göre URL belirleme
+  // --- DINAMIK URL YAPILANDIRMASI ---
   static String get baseUrl {
+    // Uygulama canlıya alındığında (Release Build) Render adresini kullanır
+    if (kReleaseMode) {
+      return "https://tahlil-backend.onrender.com";
+    }
+
+    // Uygulama test aşamasındayken (Debug) yerel adresleri kullanır
     if (kIsWeb) {
       return "http://127.0.0.1:5000";
     } else {
-      return "http://10.0.2.2:5000";
+      return "http://10.0.2.2:5000"; // Android emülatör için
     }
   }
 
@@ -33,11 +39,10 @@ class ApiServisi {
     } catch (e) {
       logger.e("Hastalık listesi çekilemedi: $e");
     }
-    // Hata olursa varsayılan bir liste döndür
     return ["Diyabet", "Tansiyon", "Kolesterol"]; 
   }
 
-  // --- KAYIT OL (YENİ PARAMETRELERLE) ---
+  // --- KAYIT OL ---
   static Future<Map<String, dynamic>> kayitOl({
     required String username, 
     required String password,
@@ -98,7 +103,7 @@ class ApiServisi {
     }
   }
 
-  // --- YENİ EKLENEN: KULLANICI DETAYLARINI GETİR ---
+  // --- KULLANICI DETAYLARINI GETİR ---
   static Future<Map<String, dynamic>?> kullaniciBilgileriniGetir() async {
     if (aktifKullanici == null) return null;
     try {
@@ -113,7 +118,6 @@ class ApiServisi {
     }
     return null;
   }
-  // -------------------------------------------------
 
   // --- PDF YÜKLE ---
   static Future<String> pdfYukle(PlatformFile file) async {
@@ -178,8 +182,6 @@ class ApiServisi {
   static Future<List<TahlilDetayi>> parametreGecmisiniGetir(String parametreAdi) async {
     if (aktifKullanici == null) return [];
     try {
-      // ÖNEMLİ: Parametre adını URL uyumlu hale getiriyoruz (Encode)
-      // Bu sayede '#' , '+' , boşluk gibi karakterler URL'i bozmaz.
       String guvenliParametreAdi = Uri.encodeComponent(parametreAdi);
       
       var url = Uri.parse("$baseUrl/results/$guvenliParametreAdi?username=$aktifKullanici");
